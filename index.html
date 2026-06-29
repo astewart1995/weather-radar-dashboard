@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-<title>Live Radar (Fixed)</title>
+<title>Tennessee Radar Dashboard</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -16,85 +16,130 @@ html, body {
     height:100%;
     width:100%;
     overflow:hidden;
+    font-family: Arial, sans-serif;
 }
 
 #map {
-    height:100%;
+    position:absolute;
+    top:0;
+    bottom:0;
     width:100%;
+}
+
+/* top bar */
+#bar {
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    height:45px;
+    background:white;
+    z-index:9999;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:0 12px;
+    border-bottom:1px solid #ddd;
 }
 </style>
 </head>
 
 <body>
 
+<div id="bar">
+    <div><b>Tennessee Live Radar</b></div>
+    <div id="time"></div>
+</div>
+
 <div id="map"></div>
 
 <script>
 
 // ======================
-// MAP
+// MAP (TENNESSEE FOCUS FIX)
 // ======================
-const center = [36.1209302, -87.6574700];
+const map = L.map('map', {
+    center: [36.1209302, -87.6574700],
+    zoom: 7,
+    minZoom: 6,
+    maxZoom: 10
+});
 
-const map = L.map('map').setView(center, 5);
+// Better TN framing (this is the correct way)
+map.fitBounds([
+    [34.99, -90.31],
+    [36.68, -81.65]
+]);
 
-// base map
+// Base map
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
 }).addTo(map);
 
-// marker
-L.marker(center).addTo(map);
+// Clock
+setInterval(() => {
+    document.getElementById("time").innerText =
+    new Date().toLocaleTimeString();
+}, 1000);
+
+// Marker
+L.marker([36.1209302, -87.6574700]).addTo(map);
 
 // ======================
-// REAL WORKING RADAR LOOP (FIXED)
+// SAFE RADAR LOOP (CORRECT RAINVIEWER IMPLEMENTATION)
 // ======================
 let frames = [];
-let i = 0;
-let layer;
+let index = 0;
+let layer = null;
 
 async function loadRadar() {
 
     const res = await fetch("https://api.rainviewer.com/public/weather-maps.json");
     const data = await res.json();
 
-    frames = data.radar.past;
+    // last 10 frames for smooth loop
+    frames = data.radar.past.slice(-10);
 
-    play();
+    playRadar();
 }
 
-function showFrame(index) {
+function showFrame(i) {
 
-    const frame = frames[index];
+    const frame = frames[i];
 
     const url =
     `https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
 
-    if (layer) map.removeLayer(layer);
+    if (layer) {
+        map.removeLayer(layer);
+    }
 
     layer = L.tileLayer(url, {
-        opacity: 0.55
+        opacity: 0.55,
+        zIndex: 500
     }).addTo(map);
 }
 
-function play() {
+function playRadar() {
 
-    i = 0;
+    index = 0;
 
-    showFrame(i);
+    showFrame(index);
 
     setInterval(() => {
 
-        i++;
+        index++;
 
-        if (i >= frames.length) i = 0;
+        if (index >= frames.length) {
+            index = 0;
+        }
 
-        showFrame(i);
+        showFrame(index);
 
-    }, 500);
-
+    }, 600);
 }
 
+// start radar
 loadRadar();
 
 </script>
