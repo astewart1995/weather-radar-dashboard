@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-<title>Tennessee Radar Dashboard</title>
+<title>Tennessee Live Radar</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -26,7 +26,6 @@ html, body {
     width:100%;
 }
 
-/* top bar */
 #bar {
     position:absolute;
     top:0;
@@ -47,7 +46,7 @@ html, body {
 <body>
 
 <div id="bar">
-    <div><b>Tennessee Live Radar</b></div>
+    <div><b>Tennessee Radar</b></div>
     <div id="time"></div>
 </div>
 
@@ -56,20 +55,16 @@ html, body {
 <script>
 
 // ======================
-// MAP (TENNESSEE FOCUS FIX)
+// MAP (TENNESSEE FOCUS)
 // ======================
+const center = [36.1209302, -87.6574700];
+
 const map = L.map('map', {
-    center: [36.1209302, -87.6574700],
+    center: center,
     zoom: 7,
     minZoom: 6,
     maxZoom: 10
 });
-
-// Better TN framing (this is the correct way)
-map.fitBounds([
-    [34.99, -90.31],
-    [36.68, -81.65]
-]);
 
 // Base map
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -83,63 +78,61 @@ setInterval(() => {
 }, 1000);
 
 // Marker
-L.marker([36.1209302, -87.6574700]).addTo(map);
+L.marker(center).addTo(map);
 
 // ======================
-// SAFE RADAR LOOP (CORRECT RAINVIEWER IMPLEMENTATION)
+// SMOOTH RADAR (NO BLINK FIX)
 // ======================
 let frames = [];
+let layers = [];
 let index = 0;
-let layer = null;
 
 async function loadRadar() {
 
     const res = await fetch("https://api.rainviewer.com/public/weather-maps.json");
     const data = await res.json();
 
-    // last 10 frames for smooth loop
     frames = data.radar.past.slice(-10);
 
-    playRadar();
+    buildLayers();
+    startAnimation();
 }
 
-function showFrame(i) {
+// Build all radar layers ONCE
+function buildLayers() {
 
-    const frame = frames[i];
+    frames.forEach(frame => {
 
-    const url =
-    `https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
+        const url =
+        `https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
 
-    if (layer) {
-        map.removeLayer(layer);
-    }
+        const layer = L.tileLayer(url, {
+            opacity: 0,
+            zIndex: 500
+        }).addTo(map);
 
-    layer = L.tileLayer(url, {
-        opacity: 0.55,
-        zIndex: 500
-    }).addTo(map);
+        layers.push(layer);
+    });
 }
 
-function playRadar() {
+// Smooth fade animation (NO layer removal)
+function startAnimation() {
 
-    index = 0;
-
-    showFrame(index);
+    layers[0].setOpacity(0.6);
 
     setInterval(() => {
 
+        layers[index].setOpacity(0);
+
         index++;
 
-        if (index >= frames.length) {
-            index = 0;
-        }
+        if (index >= layers.length) index = 0;
 
-        showFrame(index);
+        layers[index].setOpacity(0.6);
 
-    }, 600);
+    }, 450);
 }
 
-// start radar
 loadRadar();
 
 </script>
