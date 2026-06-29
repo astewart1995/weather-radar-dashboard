@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-<title>RadarScope Style Weather Radar</title>
+<title>Live Weather Radar</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -34,7 +34,7 @@ html, body {
     left:0;
     right:0;
     height:50px;
-    background:rgba(255,255,255,0.9);
+    background:rgba(255,255,255,0.95);
     display:flex;
     justify-content:space-between;
     align-items:center;
@@ -51,11 +51,24 @@ html, body {
 
 #clock {
     color:#333;
+    font-size:14px;
 }
 
-/* radar fade effect */
-.leaflet-image-layer {
-    transition: opacity 0.3s linear;
+/* marker pulse */
+.pulse {
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    background:#00aaff;
+    border:2px solid white;
+    box-shadow:0 0 10px #00aaff;
+    animation:pulse 1.4s infinite;
+}
+
+@keyframes pulse {
+    0% {transform:scale(1); opacity:1;}
+    70% {transform:scale(2); opacity:0.2;}
+    100% {transform:scale(1); opacity:1;}
 }
 </style>
 </head>
@@ -63,7 +76,7 @@ html, body {
 <body>
 
 <div id="topBar">
-    <div id="title">LIVE RADAR</div>
+    <div id="title">LIVE WEATHER RADAR</div>
     <div id="clock">--:--</div>
 </div>
 
@@ -72,19 +85,19 @@ html, body {
 <script>
 
 // ======================
-// LOCATION
+// LOCATION (your coordinates)
 // ======================
 const station = [36.1209302, -87.6574700];
 
 // ======================
-// MAP (LIGHT STYLE)
+// MAP
 // ======================
 const map = L.map('map', {
     center: station,
     zoom: 6
 });
 
-// Clean basemap
+// Light basemap
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
 }).addTo(map);
@@ -100,13 +113,20 @@ function updateClock() {
         minute:'2-digit'
     });
 }
-setInterval(updateClock,1000);
+setInterval(updateClock, 1000);
 updateClock();
 
 // ======================
 // STATION MARKER
 // ======================
-L.marker(station).addTo(map);
+const icon = L.divIcon({
+    className: "",
+    html: '<div class="pulse"></div>',
+    iconSize: [14,14],
+    iconAnchor: [7,7]
+});
+
+L.marker(station, { icon }).addTo(map);
 
 // ======================
 // TENNESSEE BORDER
@@ -126,61 +146,15 @@ fetch("https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geo
 });
 
 // ======================
-// RADAR SCOPE STYLE ANIMATION
+// FIXED RADAR LAYER (WORKING)
 // ======================
-let frames = [];
-let index = 0;
-let layer = null;
-
-async function loadRadar() {
-
-    const res = await fetch("https://api.rainviewer.com/public/weather-maps.json");
-    const data = await res.json();
-
-    frames = data.radar.past;
-
-    playRadar();
+const radar = L.tileLayer(
+"https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::radar/{z}/{x}/{y}.png",
+{
+    opacity: 0.55,
+    attribution: "IEM Radar"
 }
-
-function showFrame(i) {
-
-    const path = frames[i].path;
-
-    const url =
-    `https://tilecache.rainviewer.com${path}/256/6/20/15/2/1_1.png`;
-
-    if (layer) {
-        map.removeLayer(layer);
-    }
-
-    layer = L.imageOverlay(url, map.getBounds(), {
-        opacity: 0.6
-    });
-
-    layer.addTo(map);
-}
-
-function playRadar() {
-
-    index = 0;
-    showFrame(index);
-
-    setInterval(() => {
-
-        index++;
-
-        if (index >= frames.length) index = 0;
-
-        showFrame(index);
-
-    }, 500);
-
-}
-
-// ======================
-// FIX: start safely after load
-// ======================
-setTimeout(loadRadar, 1500);
+).addTo(map);
 
 </script>
 
