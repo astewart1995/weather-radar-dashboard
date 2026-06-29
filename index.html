@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-<title>Live Weather Radar</title>
+<title>Live Radar (Fixed)</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -16,85 +16,86 @@ html, body {
     height:100%;
     width:100%;
     overflow:hidden;
-    font-family: Arial;
 }
 
 #map {
-    position:absolute;
-    top:0;
-    bottom:0;
+    height:100%;
     width:100%;
-}
-
-#bar {
-    position:absolute;
-    top:0;
-    left:0;
-    right:0;
-    height:45px;
-    background:white;
-    z-index:9999;
-    display:flex;
-    justify-content:space-between;
-    padding:10px;
-    border-bottom:1px solid #ddd;
 }
 </style>
 </head>
 
 <body>
 
-<div id="bar">
-    <div>LIVE RADAR</div>
-    <div id="time"></div>
-</div>
-
 <div id="map"></div>
 
 <script>
 
 // ======================
-// LOCATION
+// MAP
 // ======================
 const center = [36.1209302, -87.6574700];
 
-// ======================
-// MAP (SAFE ZOOM RANGE)
-// ======================
-const map = L.map('map', {
-    center: center,
-    zoom: 5,
-    minZoom: 4,
-    maxZoom: 8
-});
+const map = L.map('map').setView(center, 5);
 
-// BASE MAP
+// base map
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
 }).addTo(map);
 
-// CLOCK
-setInterval(() => {
-    document.getElementById("time").innerText =
-    new Date().toLocaleTimeString();
-}, 1000);
-
-// MARKER
+// marker
 L.marker(center).addTo(map);
 
 // ======================
-// FINAL WORKING RADAR (NO ZOOM ERRORS)
+// REAL WORKING RADAR LOOP (FIXED)
 // ======================
-const radar = L.tileLayer.wms(
-"https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows",
-{
-    layers: "conus_bref_qcd",
-    format: "image/png",
-    transparent: true,
-    opacity: 0.55,
-    version: "1.3.0"
+let frames = [];
+let i = 0;
+let layer;
+
+async function loadRadar() {
+
+    const res = await fetch("https://api.rainviewer.com/public/weather-maps.json");
+    const data = await res.json();
+
+    frames = data.radar.past;
+
+    play();
 }
-).addTo(map);
+
+function showFrame(index) {
+
+    const frame = frames[index];
+
+    const url =
+    `https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
+
+    if (layer) map.removeLayer(layer);
+
+    layer = L.tileLayer(url, {
+        opacity: 0.55
+    }).addTo(map);
+}
+
+function play() {
+
+    i = 0;
+
+    showFrame(i);
+
+    setInterval(() => {
+
+        i++;
+
+        if (i >= frames.length) i = 0;
+
+        showFrame(i);
+
+    }, 500);
+
+}
+
+loadRadar();
 
 </script>
 
