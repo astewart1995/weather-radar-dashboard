@@ -54,7 +54,7 @@ html, body {
     font-size:14px;
 }
 
-/* pulsing marker */
+/* station marker */
 .pulse {
     width:14px;
     height:14px;
@@ -90,14 +90,14 @@ html, body {
 const station = [36.1209302, -87.6574700];
 
 // ======================
-// MAP (FIXED ZOOM + STABILITY)
+// MAP (FIXED)
 // ======================
 const map = L.map('map', {
     center: station,
     zoom: 5
 });
 
-// Light basemap
+// Light base map
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
 }).addTo(map);
@@ -146,7 +146,7 @@ fetch("https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geo
 });
 
 // ======================
-// FIXED RADAR LAYER (REAL WORKING NOAA WMS)
+// FIXED RADAR (NO TMS ERROR VERSION)
 // ======================
 const radar = L.tileLayer.wms(
 "https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows",
@@ -154,6 +154,7 @@ const radar = L.tileLayer.wms(
     layers: "conus_bref_qcd",
     format: "image/png",
     transparent: true,
+    version: "1.3.0",
     opacity: 0.55,
     attribution: "NOAA Radar"
 }
