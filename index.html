@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-<title>Live Weather Radar</title>
+<title>RadarScope Style Weather Radar</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -16,7 +16,7 @@ html, body {
     height:100%;
     width:100%;
     overflow:hidden;
-    background:#0b0f14;
+    background:#ffffff;
     font-family: Arial, sans-serif;
 }
 
@@ -34,42 +34,28 @@ html, body {
     left:0;
     right:0;
     height:50px;
-    background:rgba(10,14,20,0.75);
+    background:rgba(255,255,255,0.9);
     display:flex;
     justify-content:space-between;
     align-items:center;
     padding:0 15px;
     z-index:1000;
-    border-bottom:1px solid rgba(0,191,255,0.3);
-    backdrop-filter: blur(8px);
+    border-bottom:1px solid #ddd;
 }
 
 #title {
-    color:#00d4ff;
+    color:#0077ff;
     font-weight:bold;
-    letter-spacing:2px;
+    letter-spacing:1px;
 }
 
 #clock {
-    color:white;
-    font-size:14px;
+    color:#333;
 }
 
-/* STATION MARKER */
-.pulse {
-    width:14px;
-    height:14px;
-    border-radius:50%;
-    background:#00d4ff;
-    border:2px solid white;
-    box-shadow:0 0 10px #00d4ff;
-    animation:pulse 1.4s infinite;
-}
-
-@keyframes pulse {
-    0% {transform:scale(1); opacity:1;}
-    70% {transform:scale(2); opacity:0.2;}
-    100% {transform:scale(1); opacity:1;}
+/* radar fade effect */
+.leaflet-image-layer {
+    transition: opacity 0.3s linear;
 }
 </style>
 </head>
@@ -77,7 +63,7 @@ html, body {
 <body>
 
 <div id="topBar">
-    <div id="title">LIVE WEATHER RADAR</div>
+    <div id="title">LIVE RADAR</div>
     <div id="clock">--:--</div>
 </div>
 
@@ -86,27 +72,22 @@ html, body {
 <script>
 
 // ======================
-// YOUR LOCATION
+// LOCATION
 // ======================
 const station = [36.1209302, -87.6574700];
 
 // ======================
-// MAP
+// MAP (LIGHT STYLE)
 // ======================
 const map = L.map('map', {
     center: station,
-    zoom: 9,
-    zoomControl: true
+    zoom: 6
 });
 
-// Dark base map
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '© OpenStreetMap © CARTO'
+// Clean basemap
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
 }).addTo(map);
-
-// Radar pane
-map.createPane("radarPane");
-map.getPane("radarPane").style.zIndex = 400;
 
 // ======================
 // CLOCK
@@ -119,23 +100,16 @@ function updateClock() {
         minute:'2-digit'
     });
 }
-setInterval(updateClock, 1000);
+setInterval(updateClock,1000);
 updateClock();
 
 // ======================
 // STATION MARKER
 // ======================
-const icon = L.divIcon({
-    className: "",
-    html: '<div class="pulse"></div>',
-    iconSize: [14,14],
-    iconAnchor: [7,7]
-});
-
-L.marker(station, { icon }).addTo(map);
+L.marker(station).addTo(map);
 
 // ======================
-// TENNESSEE BOUNDARY
+// TENNESSEE BORDER
 // ======================
 fetch("https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json")
 .then(r => r.json())
@@ -143,7 +117,7 @@ fetch("https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geo
 
     L.geoJSON(data, {
         style: f => ({
-            color: f.properties.name === "Tennessee" ? "#00ffff" : "#444",
+            color: f.properties.name === "Tennessee" ? "#00aaff" : "#999",
             weight: f.properties.name === "Tennessee" ? 3 : 1,
             fillOpacity: 0
         })
@@ -152,32 +126,61 @@ fetch("https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geo
 });
 
 // ======================
-// RADAR (REAL WORKING)
+// RADAR SCOPE STYLE ANIMATION
 // ======================
-let radarLayer;
+let frames = [];
+let index = 0;
+let layer = null;
 
-function loadRadar() {
+async function loadRadar() {
 
-    const now = new Date().getTime();
+    const res = await fetch("https://api.rainviewer.com/public/weather-maps.json");
+    const data = await res.json();
 
-    const url =
-    "https://tilecache.rainviewer.com/v2/radar/nowcast_0.png?t=" + now;
+    frames = data.radar.past;
 
-    if (radarLayer) {
-        map.removeLayer(radarLayer);
-    }
-
-    radarLayer = L.tileLayer(url, {
-        opacity: 0.6,
-        pane: "radarPane"
-    });
-
-    radarLayer.addTo(map);
+    playRadar();
 }
 
-// refresh radar every 2 minutes
-loadRadar();
-setInterval(loadRadar, 120000);
+function showFrame(i) {
+
+    const path = frames[i].path;
+
+    const url =
+    `https://tilecache.rainviewer.com${path}/256/6/20/15/2/1_1.png`;
+
+    if (layer) {
+        map.removeLayer(layer);
+    }
+
+    layer = L.imageOverlay(url, map.getBounds(), {
+        opacity: 0.6
+    });
+
+    layer.addTo(map);
+}
+
+function playRadar() {
+
+    index = 0;
+    showFrame(index);
+
+    setInterval(() => {
+
+        index++;
+
+        if (index >= frames.length) index = 0;
+
+        showFrame(index);
+
+    }, 500);
+
+}
+
+// ======================
+// FIX: start safely after load
+// ======================
+setTimeout(loadRadar, 1500);
 
 </script>
 
