@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-<title>Live Weather Radar</title>
+<title>Live Radar Loop</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -46,15 +46,13 @@ html, body {
 #title {
     color:#0077ff;
     font-weight:bold;
-    letter-spacing:1px;
 }
 
 #clock {
     color:#333;
-    font-size:14px;
 }
 
-/* station marker */
+/* marker */
 .pulse {
     width:14px;
     height:14px;
@@ -76,7 +74,7 @@ html, body {
 <body>
 
 <div id="topBar">
-    <div id="title">LIVE WEATHER RADAR</div>
+    <div id="title">LIVE RADAR LOOP</div>
     <div id="clock">--:--</div>
 </div>
 
@@ -90,14 +88,14 @@ html, body {
 const station = [36.1209302, -87.6574700];
 
 // ======================
-// MAP (FIXED)
+// MAP
 // ======================
 const map = L.map('map', {
     center: station,
     zoom: 5
 });
 
-// Light base map
+// light base
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
 }).addTo(map);
@@ -146,19 +144,62 @@ fetch("https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geo
 });
 
 // ======================
-// FIXED RADAR (NO TMS ERROR VERSION)
+// RADAR ANIMATION (REAL WORKING LOOP)
 // ======================
-const radar = L.tileLayer.wms(
-"https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows",
-{
-    layers: "conus_bref_qcd",
-    format: "image/png",
-    transparent: true,
-    version: "1.3.0",
-    opacity: 0.55,
-    attribution: "NOAA Radar"
+let frames = [];
+let frameIndex = 0;
+let radarLayer = null;
+
+// get radar frames
+async function loadRadar() {
+
+    const res = await fetch("https://api.rainviewer.com/public/weather-maps.json");
+    const data = await res.json();
+
+    frames = data.radar.past.slice(-12); // last 12 frames
+
+    playRadar();
 }
-).addTo(map);
+
+// show frame
+function showFrame(i) {
+
+    const path = frames[i].path;
+
+    const url =
+    `https://tilecache.rainviewer.com${path}/256/6/20/15/2/1_1.png`;
+
+    if (radarLayer) {
+        map.removeLayer(radarLayer);
+    }
+
+    radarLayer = L.imageOverlay(url, map.getBounds(), {
+        opacity: 0.6
+    }).addTo(map);
+}
+
+// animation loop
+function playRadar() {
+
+    frameIndex = 0;
+    showFrame(frameIndex);
+
+    setInterval(() => {
+
+        frameIndex++;
+
+        if (frameIndex >= frames.length) {
+            frameIndex = 0;
+        }
+
+        showFrame(frameIndex);
+
+    }, 600);
+
+}
+
+// start after load
+setTimeout(loadRadar, 1200);
 
 </script>
 
