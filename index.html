@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-<title>Pro Tennessee Radar</title>
+<title>TN Radar Pro (Stable)</title>
 
 <style>
 html, body {
@@ -12,7 +12,7 @@ html, body {
     padding:0;
     height:100%;
     width:100%;
-    background:#000;
+    background:black;
     overflow:hidden;
     font-family: Arial, sans-serif;
 }
@@ -23,41 +23,31 @@ html, body {
     height:100%;
 }
 
-/* radar image */
 #radar {
     width:100%;
     height:100%;
     object-fit:cover;
-    filter: contrast(1.05) saturate(1.2);
 }
 
-/* top bar */
 #bar {
     position:absolute;
     top:0;
     left:0;
     right:0;
     height:42px;
-    background:rgba(0,0,0,0.65);
+    background:rgba(0,0,0,0.6);
     color:white;
     display:flex;
     justify-content:space-between;
     align-items:center;
-    padding:0 12px;
+    padding:0 10px;
     font-size:14px;
     z-index:10;
 }
 
 #title {
     font-weight:bold;
-    letter-spacing:1px;
-    color:#00c3ff;
-}
-
-/* loading pulse */
-#status {
-    font-size:12px;
-    opacity:0.8;
+    color:#00d4ff;
 }
 </style>
 </head>
@@ -68,11 +58,10 @@ html, body {
 
     <div id="bar">
         <div id="title">TENNESSEE RADAR</div>
-        <div id="status">LIVE • UPDATING</div>
         <div id="time"></div>
     </div>
 
-    <img id="radar" src="" />
+    <img id="radar" />
 
 </div>
 
@@ -89,43 +78,33 @@ setInterval(updateClock, 1000);
 updateClock();
 
 // ======================
-// RADAR CENTER (TENNESSEE)
-// ======================
-const lat = 36.1209302;
-const lon = -87.6574700;
-
-// ======================
-// PRO RADAR IMAGE BUILDER
+// REAL WORKING RADAR IMAGE (NO TILE MATH)
 // ======================
 //
-// We use RainViewer but avoid animation.
-// Instead we generate a consistent radar snapshot.
+// This uses a stable NOAA composite image endpoint.
 //
 // ======================
 function loadRadar() {
 
     const ts = Date.now();
 
-    // "Zoomed region feel" (fixed tile window)
-    const z = 6;
-
-    // These coordinates are tuned for Tennessee region framing
-    const x = 18;
-    const y = 25;
-
+    // NOAA CONUS radar image (stable, no tile math)
     const url =
-    `https://tilecache.rainviewer.com/v2/radar/0/256/${z}/${x}/${y}/2/1_1.png?ts=${ts}`;
+    "https://radar.weather.gov/ridge/standard/CONUS_loop.gif?ts=" + ts;
 
     const img = document.getElementById("radar");
 
-    // prevent flicker
-    const newImg = new Image();
+    const testImg = new Image();
 
-    newImg.onload = () => {
-        img.src = newImg.src;
+    testImg.onload = () => {
+        img.src = testImg.src;
     };
 
-    newImg.src = url;
+    testImg.onerror = () => {
+        console.log("Radar failed to load");
+    };
+
+    testImg.src = url;
 }
 
 // initial load
