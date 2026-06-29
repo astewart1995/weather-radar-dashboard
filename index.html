@@ -54,7 +54,7 @@ html, body {
     font-size:14px;
 }
 
-/* marker pulse */
+/* pulsing marker */
 .pulse {
     width:14px;
     height:14px;
@@ -85,16 +85,16 @@ html, body {
 <script>
 
 // ======================
-// LOCATION (your coordinates)
+// LOCATION
 // ======================
 const station = [36.1209302, -87.6574700];
 
 // ======================
-// MAP
+// MAP (FIXED ZOOM + STABILITY)
 // ======================
 const map = L.map('map', {
     center: station,
-    zoom: 6
+    zoom: 5
 });
 
 // Light basemap
@@ -146,13 +146,16 @@ fetch("https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geo
 });
 
 // ======================
-// FIXED RADAR LAYER (WORKING)
+// FIXED RADAR LAYER (REAL WORKING NOAA WMS)
 // ======================
-const radar = L.tileLayer(
-"https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::radar/{z}/{x}/{y}.png",
+const radar = L.tileLayer.wms(
+"https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows",
 {
+    layers: "conus_bref_qcd",
+    format: "image/png",
+    transparent: true,
     opacity: 0.55,
-    attribution: "IEM Radar"
+    attribution: "NOAA Radar"
 }
 ).addTo(map);
 
