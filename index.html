@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-<title>Live Radar</title>
+<title>Live Weather Radar</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -53,11 +53,20 @@ html, body {
 
 <script>
 
+// ======================
 // LOCATION
+// ======================
 const center = [36.1209302, -87.6574700];
 
-// MAP (SAFE ZOOM FIX)
-const map = L.map('map').setView(center, 5);
+// ======================
+// MAP (IMPORTANT FIX HERE)
+// ======================
+const map = L.map('map', {
+    center: center,
+    zoom: 5,
+    minZoom: 4,
+    maxZoom: 6   // 🔥 THIS FIXES "zoom level not supported"
+});
 
 // BASE MAP
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -74,15 +83,16 @@ setInterval(() => {
 L.marker(center).addTo(map);
 
 // ======================
-// WORKING RADAR LAYER (NO LOOP BUGS)
+// STABLE RADAR LAYER (NO ZOOM ERRORS)
 // ======================
-
-// THIS is the key fix
 const radar = L.tileLayer(
 "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::radar/{z}/{x}/{y}.png",
 {
-    opacity: 0.55
-}).addTo(map);
+    opacity: 0.55,
+    maxZoom: 6,
+    minZoom: 4
+}
+).addTo(map);
 
 </script>
 
