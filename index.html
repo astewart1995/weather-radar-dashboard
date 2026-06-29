@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Live Radar Loop</title>
+<title>Live Radar</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -16,7 +16,6 @@ html, body {
     height:100%;
     width:100%;
     overflow:hidden;
-    background:#fff;
     font-family: Arial;
 }
 
@@ -27,18 +26,17 @@ html, body {
     width:100%;
 }
 
-#topBar {
+#bar {
     position:absolute;
     top:0;
     left:0;
     right:0;
     height:45px;
-    background:rgba(255,255,255,0.9);
-    z-index:1000;
+    background:white;
+    z-index:9999;
     display:flex;
     justify-content:space-between;
-    align-items:center;
-    padding:0 10px;
+    padding:10px;
     border-bottom:1px solid #ddd;
 }
 </style>
@@ -46,98 +44,45 @@ html, body {
 
 <body>
 
-<div id="topBar">
+<div id="bar">
     <div>LIVE RADAR</div>
-    <div id="clock"></div>
+    <div id="time"></div>
 </div>
 
 <div id="map"></div>
 
 <script>
 
-// ======================
 // LOCATION
-// ======================
 const center = [36.1209302, -87.6574700];
 
-// ======================
-// MAP (FIXED SAFE ZOOM)
-// ======================
-const map = L.map('map', {
-    center: center,
-    zoom: 5
-});
+// MAP (SAFE ZOOM FIX)
+const map = L.map('map').setView(center, 5);
 
-// base map
+// BASE MAP
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
 }).addTo(map);
 
-// ======================
 // CLOCK
-// ======================
 setInterval(() => {
-    document.getElementById("clock").innerText =
+    document.getElementById("time").innerText =
     new Date().toLocaleTimeString();
 }, 1000);
 
-// ======================
-// STATION MARKER
-// ======================
+// MARKER
 L.marker(center).addTo(map);
 
 // ======================
-// RADAR LOOP (REAL IMPLEMENTATION)
+// WORKING RADAR LAYER (NO LOOP BUGS)
 // ======================
-let frames = [];
-let index = 0;
-let layer = null;
 
-async function loadRadar() {
-
-    const res = await fetch("https://api.rainviewer.com/public/weather-maps.json");
-    const data = await res.json();
-
-    frames = data.radar.past.slice(-10);
-
-    playLoop();
-}
-
-function showFrame(i) {
-
-    const frame = frames[i];
-
-    const url =
-    `https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
-
-    if (layer) {
-        map.removeLayer(layer);
-    }
-
-    layer = L.tileLayer(url, {
-        opacity: 0.55
-    }).addTo(map);
-}
-
-function playLoop() {
-
-    index = 0;
-
-    showFrame(index);
-
-    setInterval(() => {
-
-        index++;
-
-        if (index >= frames.length) index = 0;
-
-        showFrame(index);
-
-    }, 500);
-
-}
-
-loadRadar();
+// THIS is the key fix
+const radar = L.tileLayer(
+"https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::radar/{z}/{x}/{y}.png",
+{
+    opacity: 0.55
+}).addTo(map);
 
 </script>
 
