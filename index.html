@@ -1,3 +1,11 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Tennessee Radar Pro</title>
+
 <style>
 html, body {
     margin:0;
@@ -5,58 +13,127 @@ html, body {
     height:100%;
     width:100%;
     overflow:hidden;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
     background:#0b0f14;
 }
 
-/* radar container */
 #wrap {
     position:relative;
     width:100%;
     height:100%;
 }
 
-/* radar image (soft, realistic look) */
 #radar {
     width:100%;
     height:100%;
     object-fit:cover;
-
-    /* REMOVE “cartoon” look */
     filter: contrast(1.02) saturate(1.05) brightness(0.98);
 }
 
-/* top bar (professional UI style) */
+/* clean top bar */
 #bar {
     position:absolute;
     top:0;
     left:0;
     right:0;
     height:38px;
-
     background:rgba(15, 18, 22, 0.75);
     backdrop-filter: blur(8px);
-
-    color:#cfd6dd;
+    color:#e6edf3;
     display:flex;
     justify-content:space-between;
     align-items:center;
     padding:0 12px;
-
     font-size:12.5px;
-    letter-spacing:0.4px;
-
+    letter-spacing:0.3px;
     border-bottom:1px solid rgba(255,255,255,0.06);
+    z-index:10;
 }
 
-/* title styling (subtle, not neon) */
 #title {
     font-weight:500;
-    color:#e6edf3;
 }
 
-/* status text muted */
 #time {
     opacity:0.75;
 }
 </style>
+</head>
+
+<body>
+
+<div id="wrap">
+
+    <div id="bar">
+        <div id="title">TENNESSEE RADAR</div>
+        <div id="time"></div>
+    </div>
+
+    <img id="radar" />
+
+</div>
+
+<script>
+
+// ======================
+// CLOCK
+// ======================
+function updateClock() {
+    document.getElementById("time").innerText =
+    new Date().toLocaleTimeString();
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ======================
+// RADAR IMAGE (STABLE DAKBOARD)
+// ======================
+function loadRadar() {
+
+    const ts = Date.now();
+
+    const url =
+    "https://radar.weather.gov/ridge/standard/CONUS_loop.gif?ts=" + ts;
+
+    document.getElementById("radar").src = url;
+}
+
+loadRadar();
+setInterval(loadRadar, 60000);
+
+// ======================
+// MAP OVERLAY (TENNESSEE OUTLINE)
+// ======================
+
+// create hidden Leaflet map just for outline layer
+const mapDiv = document.createElement("div");
+mapDiv.style.width = "0";
+mapDiv.style.height = "0";
+document.body.appendChild(mapDiv);
+
+const map = L.map(mapDiv).setView([36.1209302, -87.6574700], 7);
+
+// base layer (not visible, just needed for geojson context)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+// Tennessee outline
+fetch("https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json")
+.then(res => res.json())
+.then(data => {
+
+    L.geoJSON(data, {
+        filter: f => f.properties.name === "Tennessee",
+        style: {
+            color: "#6ec1ff",
+            weight: 2,
+            opacity: 0.9,
+            fillOpacity: 0
+        }
+    }).addTo(map);
+
+});
+
+</script>
+
+</body>
+</html>
