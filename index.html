@@ -23,19 +23,26 @@ html, body {
     height:100%;
 }
 
+/* Radar styling tuned for “local focus” feel */
 #radar {
-    width:100%;
-    height:100%;
+    width:110%;
+    height:110%;
     object-fit:cover;
+
+    /* slight crop shift toward TN region feel */
+    transform: translate(-5%, -3%);
+
+    filter: contrast(1.05) saturate(1.05) brightness(0.98);
 }
 
+/* Top bar */
 #bar {
     position:absolute;
     top:0;
     left:0;
     right:0;
     height:42px;
-    background:rgba(0,0,0,0.6);
+    background:rgba(0,0,0,0.55);
     color:white;
     display:flex;
     justify-content:space-between;
@@ -43,11 +50,13 @@ html, body {
     padding:0 10px;
     font-size:14px;
     z-index:10;
+    backdrop-filter: blur(6px);
 }
 
 #title {
     font-weight:bold;
-    color:#00d4ff;
+    color:#4fc3ff;
+    letter-spacing:0.5px;
 }
 </style>
 </head>
@@ -78,33 +87,27 @@ setInterval(updateClock, 1000);
 updateClock();
 
 // ======================
-// REAL WORKING RADAR IMAGE (NO TILE MATH)
-// ======================
-//
-// This uses a stable NOAA composite image endpoint.
-//
+// STABLE RADAR LOADER
 // ======================
 function loadRadar() {
 
-    const ts = Date.now();
-
-    // NOAA CONUS radar image (stable, no tile math)
-    const url =
-    "https://radar.weather.gov/ridge/standard/CONUS_loop.gif?ts=" + ts;
-
     const img = document.getElementById("radar");
 
-    const testImg = new Image();
+    // NOAA loop (stable + widely supported)
+    const url =
+    "https://radar.weather.gov/ridge/standard/CONUS_loop.gif?t=" + Date.now();
 
-    testImg.onload = () => {
-        img.src = testImg.src;
+    const temp = new Image();
+
+    temp.onload = () => {
+        img.src = temp.src;
     };
 
-    testImg.onerror = () => {
+    temp.onerror = () => {
         console.log("Radar failed to load");
     };
 
-    testImg.src = url;
+    temp.src = url;
 }
 
 // initial load
